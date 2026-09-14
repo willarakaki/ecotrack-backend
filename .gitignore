@@ -1,0 +1,23 @@
+# IDEs e OS
+.idea/
+.vscode/
+*.swp
+*.DS_Store
+Thumbs.db
+
+# Java & Spring Boot (Core)
+core/target/
+core/*.log
+core/.mvn/wrapper/maven-wrapper.jar
+!core/.mvn/wrapper/maven-wrapper.properties
+
+# Python & IA (Router/Gatekeeper) - Preparação para Sprints 3 e 4
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.pytest_cache/
+
+# Dados Locais e Logs
+docker-volumes/
