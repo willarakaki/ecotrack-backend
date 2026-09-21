@@ -48,6 +48,18 @@ public class User {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    // --- Gamification Fields ---
+    @Column(name = "eco_coins_balance", nullable = false)
+    private Double ecoCoinsBalance = 0.0;
+
+    @Column(name = "total_co2_saved", nullable = false)
+    private Double totalCo2Saved = 0.0;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private Long version;
+    // ---------------------------
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

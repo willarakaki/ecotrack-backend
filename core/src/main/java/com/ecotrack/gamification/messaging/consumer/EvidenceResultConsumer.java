@@ -3,6 +3,7 @@ package com.ecotrack.gamification.messaging.consumer;
 import com.ecotrack.gamification.domain.document.EsgActionAuditLog;
 import com.ecotrack.gamification.domain.dto.EvidenceResultEvent;
 import com.ecotrack.gamification.repository.nosql.EsgActionAuditLogRepository;
+import com.ecotrack.gamification.service.GamificationEngineService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -16,9 +17,11 @@ public class EvidenceResultConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(EvidenceResultConsumer.class);
     private final EsgActionAuditLogRepository auditLogRepository;
+    private final GamificationEngineService gamificationEngineService;
 
-    public EvidenceResultConsumer(EsgActionAuditLogRepository auditLogRepository) {
+    public EvidenceResultConsumer(EsgActionAuditLogRepository auditLogRepository, GamificationEngineService gamificationEngineService) {
         this.auditLogRepository = auditLogRepository;
+        this.gamificationEngineService = gamificationEngineService;
     }
 
     /**
@@ -42,10 +45,14 @@ public class EvidenceResultConsumer {
             auditLog.setUserId(event.userId());
             auditLog.setTimestamp(Instant.now());
 
-            // Regra de Negócio: Zera o impacto ESG em caso de Fraude ou Rejeição e taggeia o log
+            // Regra de Negócio: Bloqueia acúmulo de carbono falso em fraudes
             if ("APPROVED".equalsIgnoreCase(event.verdict())) {
                 auditLog.setActionType(event.actionType());
                 auditLog.setEstimatedCo2Saved(event.estimatedCo2Saved());
+                
+                // Dispara o motor de gamificação para atualizar saldo no Oracle SQL
+                gamificationEngineService.processReward(event.userId(), event.estimatedCo2Saved());
+                
             } else if ("FRAUD".equalsIgnoreCase(event.verdict())) {
                 auditLog.setActionType("FRAUD_ATTEMPT_" + event.actionType());
                 auditLog.setEstimatedCo2Saved(0.0);
