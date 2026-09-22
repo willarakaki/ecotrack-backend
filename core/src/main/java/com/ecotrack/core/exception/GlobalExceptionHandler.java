@@ -51,6 +51,28 @@ public class GlobalExceptionHandler {
         return problemDetail;
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ProblemDetail handleIllegalStateException(IllegalStateException ex) {
+        log.warn("Operação ilegal interceptada: {}", ex.getMessage());
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setTitle("Operação Não Permitida");
+        problemDetail.setType(URI.create("https://ecotrack.com/api/errors/illegal-state"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(org.springframework.dao.OptimisticLockingFailureException.class)
+    public ProblemDetail handleConcurrencyException(org.springframework.dao.OptimisticLockingFailureException ex) {
+        log.warn("Colisão de concorrência detectada (Double Spending attempt bloqueada).");
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "A solicitação colidiu com outra operação em andamento. Por favor, atualize seus dados e tente novamente.");
+        problemDetail.setTitle("Conflito de Concorrência");
+        problemDetail.setType(URI.create("https://ecotrack.com/api/errors/conflict"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        return problemDetail;
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleAllUncaughtException(Exception ex) {
         // Logamos o erro verdadeiro para o Sentry/Datadog, mas NUNCA expomos ao cliente (OWASP)

@@ -12,6 +12,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.context.annotation.Import;
 
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.utility.DockerImageName;
+
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import(JpaConfig.class)
@@ -22,8 +25,13 @@ public abstract class AbstractIntegrationTest {
             .withUsername("test_user")
             .withPassword("test_pass");
 
+    // Usando amazon/dynamodb-local para evitar erros de Docker Socket no Windows (LocalStack exige socket bind)
+    protected static final GenericContainer<?> dynamoDbContainer = new GenericContainer<>(DockerImageName.parse("amazon/dynamodb-local:latest"))
+            .withExposedPorts(8000);
+
     static {
         oracleContainer.start();
+        dynamoDbContainer.start();
     }
 
     @DynamicPropertySource
@@ -32,5 +40,11 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.username", oracleContainer::getUsername);
         registry.add("spring.datasource.password", oracleContainer::getPassword);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+
+        // Configurações do AWS SDK v2 para apontar para o DynamoDB Local
+        registry.add("aws.dynamodb.endpoint", () -> "http://" + dynamoDbContainer.getHost() + ":" + dynamoDbContainer.getMappedPort(8000));
+        registry.add("aws.region", () -> "us-east-1");
+        registry.add("aws.accessKeyId", () -> "fakeMyKeyId");
+        registry.add("aws.secretAccessKey", () -> "fakeSecretAccessKey");
     }
 }
