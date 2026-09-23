@@ -4,6 +4,7 @@ from confluent_kafka import Consumer, KafkaError
 from app.core.config import settings
 from app.messaging.schemas import EvidenceRequestEvent, EvidenceResultEvent
 from app.messaging.producer import KafkaProducerService
+from app.agents.graph import ai_orchestrator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -15,15 +16,15 @@ class KafkaEvidenceConsumer:
     """
     def __init__(self):
         self.consumer = Consumer({
-            'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS,
-            'group.id': settings.KAFKA_CONSUMER_GROUP,
+            'bootstrap.servers': settings.kafka_bootstrap_servers,
+            'group.id': settings.kafka_consumer_group,
             'auto.offset.reset': 'earliest'
         })
         self.producer = KafkaProducerService()
 
     def start(self):
-        self.consumer.subscribe([settings.KAFKA_TOPIC_EVIDENCE])
-        logger.info(f"[CONSUMER] Escutando evidências no tópico: {settings.KAFKA_TOPIC_EVIDENCE}")
+        self.consumer.subscribe([settings.kafka_topic_evidence])
+        logger.info(f"[CONSUMER] Escutando evidências no tópico: {settings.kafka_topic_evidence}")
 
         try:
             while True:
@@ -38,26 +39,33 @@ class KafkaEvidenceConsumer:
                         break
 
                 try:
-                    # Desserializa evento (Trava Pydantic)
+                    # 1. Validação Estrutural
                     raw_data = json.loads(msg.value().decode('utf-8'))
                     event = EvidenceRequestEvent(**raw_data)
-                    logger.info(f"[CONSUMER] Evidência recebida! ActionId={event.actionId}, Tipo={event.actionType}")
+                    logger.info(f"[CONSUMER] Evidência recebida! ActionId={event.actionId}")
                     
-                    # --------------------------------------------------------
-                    # TODO (Sprint 3): Integrar chamada real do LangGraph aqui!
-                    # --------------------------------------------------------
+                    # 2. Executa a Máquina de Estados de IA (LangGraph)
+                    initial_state = {
+                        "action_id": event.actionId,
+                        "action_type": event.actionType,
+                        "evidence_url": event.evidenceUrl
+                    }
                     
-                    # Mock de devolução temporária para o Java
+                    # A IA mastiga a evidência
+                    final_state = ai_orchestrator.invoke(initial_state)
+                    
+                    # 3. Empacota a saída para devolver ao ecossistema Java (Spring Boot)
                     result = EvidenceResultEvent(
                         tenantId=event.tenantId,
                         actionId=event.actionId,
                         userId=event.userId,
                         actionType=event.actionType,
-                        verdict="APPROVED", # Mock
-                        estimatedCo2Saved=15.0, # Mock de calculo de IA
-                        aiReasoning="[MOCK] O LangGraph aprovou a foto enviada."
+                        verdict=final_state["verdict"],
+                        estimatedCo2Saved=final_state["co2_saved"],
+                        aiReasoning=final_state["reasoning"]
                     )
                     
+                    # Despacha via Producer
                     self.producer.send_result(result)
                     
                 except Exception as e:

@@ -13,7 +13,7 @@ class KafkaProducerService:
     """
     def __init__(self):
         self.producer = Producer({
-            'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS
+            'bootstrap.servers': settings.kafka_bootstrap_servers
         })
 
     def send_result(self, event: EvidenceResultEvent):
@@ -23,12 +23,12 @@ class KafkaProducerService:
             
             # Envia utilizando o actionId como chave para garantir ordenação nas partições
             self.producer.produce(
-                topic=settings.KAFKA_TOPIC_RESULTS,
+                topic=settings.kafka_topic_results,
                 key=event.actionId,
                 value=payload
             )
             self.producer.flush()
-            logger.info(f"[PRODUCER] Veredito enviado: Topic={settings.KAFKA_TOPIC_RESULTS} | Action={event.actionId} | Verdict={event.verdict}")
+            logger.info(f"[PRODUCER] Veredito enviado: Topic={settings.kafka_topic_results} | Action={event.actionId} | Verdict={event.verdict}")
         
         except Exception as e:
             logger.error(f"[PRODUCER] Erro crítico ao produzir mensagem para o Kafka: {e}")
