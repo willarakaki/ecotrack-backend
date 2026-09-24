@@ -1,6 +1,6 @@
 import logging
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.chat_models import ChatOllama
+from langchain_ollama import ChatOllama
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
