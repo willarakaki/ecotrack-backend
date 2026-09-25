@@ -15,12 +15,14 @@ class LLMFactory:
     @staticmethod
     def get_google_gemini(model_name: str = "gemini-3.5-flash", temperature: float = 0.1) -> ChatGoogleGenerativeAI:
         """Instancia o Gemini (usado para inferência pesada / OCR)."""
-        if not settings.google_api_key:
-            logger.warning("GOOGLE_API_KEY não configurada no .env!")
-        
+        api_key = settings.google_api_key
+        if not api_key:
+            logger.warning("GOOGLE_API_KEY não configurada no .env! Usando dummy para evitar crash no boot.")
+            api_key = "dummy-key-for-boot"
+            
         return ChatGoogleGenerativeAI(
             model=model_name,
-            api_key=settings.google_api_key,
+            api_key=api_key,
             temperature=temperature
         )
 
