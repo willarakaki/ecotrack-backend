@@ -44,6 +44,22 @@ services:
       - "8000:8000"
     command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
 
+  # Inteligência Artificial e Orquestração LangGraph
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: ecotrack-ai-worker
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - LANGCHAIN_TRACING_V2=true
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
+      - LANGCHAIN_PROJECT=ecotrack-ai
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+
 volumes:
   oracle_data:
   kafka_data:

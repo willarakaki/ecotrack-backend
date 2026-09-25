@@ -4,7 +4,7 @@ from confluent_kafka import Consumer, KafkaError
 from app.core.config import settings
 from app.messaging.schemas import EvidenceRequestEvent, EvidenceResultEvent
 from app.messaging.producer import KafkaProducerService
-from app.agents.graph import ai_orchestrator
+from app.orchestrator.graph import ai_orchestrator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

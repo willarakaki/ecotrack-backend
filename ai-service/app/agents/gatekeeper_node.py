@@ -1,7 +1,7 @@
 import logging
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel, Field
-from app.agents.state import EvidenceValidationState
+from app.orchestrator.state import EvidenceValidationState
 from app.core.llm_factory import LLMFactory
 
 logger = logging.getLogger(__name__)

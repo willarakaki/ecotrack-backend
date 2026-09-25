@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from app.agents.graph import ai_orchestrator
+from app.orchestrator.graph import ai_orchestrator
 from app.agents.gatekeeper_node import GatekeeperOutput
 from app.agents.nodes import ValidationOutput
 
