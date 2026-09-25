@@ -1,0 +1,14 @@
+.git
+.gitignore
+.dockerignore
+.idea
+.vscode
+docker-volumes/
+**/target/
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/*.log
+**/.env

@@ -1,19 +1,24 @@
 import logging
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel, Field
+from app.core.config import settings
 from app.orchestrator.state import EvidenceValidationState
-from app.core.llm_factory import LLMFactory
 
 logger = logging.getLogger(__name__)
 
-# 1. Output Rigoroso: Forçamos a IA a responder em JSON tipado
+# 1. Output Rigoroso: Forçamos o Gemini a responder em JSON tipado!
 class ValidationOutput(BaseModel):
     verdict: str = Field(description="Deve ser EXATAMENTE um destes: 'APPROVED', 'REJECTED' ou 'FRAUD'")
     reasoning: str = Field(description="Explicação sucinta de como você chegou a esse veredito e ao cálculo de CO2.")
     co2_saved: float = Field(description="Estimativa de kg de CO2 poupado. Deve ser 0.0 se for FRAUD ou REJECTED.")
 
-# 2. Inicialização Dinâmica via Factory
-llm = LLMFactory.get_default_validator()
+# 2. Inicialização do Modelo (Usamos o Flash por ser hiper-rápido para validações em massa)
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3.5-flash",
+    api_key=settings.GEMINI_API_KEY,
+    temperature=0.1 # Temperatura baixa para respostas mais determinísticas/matemáticas
+)
 
 # Acoplamos a saída estruturada Pydantic à LLM
 structured_llm = llm.with_structured_output(ValidationOutput)
