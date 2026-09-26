@@ -1,5 +1,5 @@
 from langgraph.graph import StateGraph, END
-from app.agents.state import EvidenceValidationState
+from app.orchestrator.state import EvidenceValidationState
 from app.agents.nodes import validate_evidence_node
 from app.agents.gatekeeper_node import gatekeeper_node
 
