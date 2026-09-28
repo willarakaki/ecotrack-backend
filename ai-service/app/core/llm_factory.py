@@ -36,6 +36,18 @@ class LLMFactory:
         )
 
     @staticmethod
+    def get_qwen_guardrail(model_name: str = "qwen2.5:7b", temperature: float = 0.0) -> ChatOllama:
+        """
+        Instancia o Qwen 2.5 (7B) rodando na GPU local (RTX 3070) via Ollama.
+        Especializado em atuacao como Guardrail Neural (Topical + Jailbreak Filter).
+        """
+        return ChatOllama(
+            base_url=settings.ollama_base_url,
+            model=model_name,
+            temperature=temperature
+        )
+
+    @staticmethod
     def get_default_validator() -> ChatGoogleGenerativeAI:
         """Retorna o modelo primario para validacao corporativa."""
         return LLMFactory.get_google_gemini()

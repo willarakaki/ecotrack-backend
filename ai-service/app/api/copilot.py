@@ -6,9 +6,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
-from app.security.prompt_guard import prompt_guard
+from app.security.qwen_guardrail import qwen_guardrail
 from app.security.pii_sanitizer import pii_sanitizer
-from app.security.topical_guard import topical_guard
 from app.core.llm_factory import LLMFactory
 from app.rag.retriever import esg_retriever
 
@@ -65,8 +64,8 @@ CONHECIMENTO TECNICO RELEVANTE (RAG / Fatores Oficiais ESG):
 @router.post("/chat", response_model=ChatResponse)
 async def chat_with_copilot(payload: ChatRequest):
     """
-    Endpoint interativo sincronizado do EcoTrack AI Copilot com RAG.
-    Pipeline: PromptGuard -> PIISanitizer -> TopicalGuard -> RAG Retrieval -> Gemini LLM.
+    Endpoint interativo sincronizado do EcoTrack AI Copilot com Guardrail Neural Qwen 2.5 (7B) + RAG.
+    Pipeline: Qwen Guardrail (Jailbreak + Topical) -> PIISanitizer (Presidio) -> RAG Retrieval -> Gemini LLM.
     """
     user_input = payload.message.strip()
     if not user_input:
@@ -75,14 +74,14 @@ async def chat_with_copilot(payload: ChatRequest):
             detail="A mensagem nao pode ser vazia."
         )
 
-    # 1. Pipeline de Seguranca: Validacao de Prompt Injection (OWASP LLM01)
-    guard_result = prompt_guard.validate(user_input)
-    if not guard_result.is_safe:
-        logger.warning(f"[Copilot API] Bloqueio por Prompt Injection: {guard_result.reason}")
+    # 1. Pipeline de Seguranca: Guardrail Neural Qwen 2.5 (7B via Ollama / RTX 3070)
+    verdict = qwen_guardrail.evaluate(user_input)
+    if not verdict.is_safe:
+        logger.warning(f"[Copilot API] Bloqueio de Seguranca por Qwen Guardrail: {verdict.reason}")
         return ChatResponse(
             reply="Sua mensagem foi bloqueada pelas diretrizes de seguranca e uso aceitavel.",
             blocked_by_guardrail=True,
-            guardrail_reason=guard_result.reason,
+            guardrail_reason=verdict.reason,
             sanitized_input=user_input,
             rag_context_used=False
         )
@@ -90,12 +89,16 @@ async def chat_with_copilot(payload: ChatRequest):
     # 2. Pipeline de Seguranca: Anonimizacao de PII (LGPD / Presidio)
     sanitized_input = pii_sanitizer.sanitize(user_input)
 
-    # 3. Pipeline de Seguranca: Topical Guardrail (Escopo ESG)
-    topic_result = topical_guard.check_topic(sanitized_input)
-    if not topic_result.is_on_topic:
-        logger.info(f"[Copilot API] Redirecionamento por desvio de topico.")
+    # 3. Pipeline de Seguranca: Verificacao Topical (Escopo ESG)
+    if not verdict.is_on_topic:
+        logger.info(f"[Copilot API] Redirecionamento de topico por Qwen Guardrail: {verdict.reason}")
+        redirect_msg = (
+            "Como seu Copiloto de Sustentabilidade da EcoTrack, posso ajudar exclusivamente com "
+            "dicas para reduzir sua pegada de carbono, mobilidade urbana, reciclagem e gestao de EcoCoins. "
+            "Como podemos colaborar pelo meio ambiente hoje?"
+        )
         return ChatResponse(
-            reply=topic_result.redirect_message or "Posso ajudar apenas com questoes relacionadas a sustentabilidade.",
+            reply=redirect_msg,
             blocked_by_guardrail=True,
             guardrail_reason="TOPICAL_DEVIATION",
             sanitized_input=sanitized_input,
@@ -138,7 +141,7 @@ async def chat_with_copilot(payload: ChatRequest):
 @router.post("/chat/stream")
 async def chat_stream_with_copilot(payload: ChatRequest):
     """
-    Endpoint com suporte a Server-Sent Events (SSE) / Streaming em tempo real enriquecido com RAG.
+    Endpoint com suporte a Server-Sent Events (SSE) / Streaming em tempo real enriquecido com Qwen Guardrail + RAG.
     """
     user_input = payload.message.strip()
     if not user_input:
@@ -148,13 +151,13 @@ async def chat_stream_with_copilot(payload: ChatRequest):
         )
 
     def event_generator():
-        # 1. Pipeline de Seguranca: Prompt Injection
-        guard_result = prompt_guard.validate(user_input)
-        if not guard_result.is_safe:
+        # 1. Pipeline de Seguranca: Guardrail Neural Qwen 2.5
+        verdict = qwen_guardrail.evaluate(user_input)
+        if not verdict.is_safe:
             err_payload = {
                 "content": "Sua mensagem foi bloqueada pelas diretrizes de seguranca.",
                 "blocked_by_guardrail": True,
-                "reason": guard_result.reason
+                "reason": verdict.reason
             }
             yield f"data: {json.dumps(err_payload)}\n\n"
             yield "data: [DONE]\n\n"
@@ -164,10 +167,12 @@ async def chat_stream_with_copilot(payload: ChatRequest):
         sanitized_input = pii_sanitizer.sanitize(user_input)
 
         # 3. Pipeline de Seguranca: Topical Guard
-        topic_result = topical_guard.check_topic(sanitized_input)
-        if not topic_result.is_on_topic:
+        if not verdict.is_on_topic:
             redirect_payload = {
-                "content": topic_result.redirect_message or "Posso ajudar apenas com questoes sustentaveis.",
+                "content": (
+                    "Como seu Copiloto de Sustentabilidade da EcoTrack, posso ajudar exclusivamente com "
+                    "dicas para reduzir sua pegada de carbono, mobilidade urbana, reciclagem e gestao de EcoCoins."
+                ),
                 "blocked_by_guardrail": True,
                 "reason": "TOPICAL_DEVIATION"
             }
