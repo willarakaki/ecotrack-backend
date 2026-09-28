@@ -14,10 +14,16 @@ public class EsgActionAuditLog {
     private Instant timestamp;
     private UUID actionId;
     private UUID userId;
-    private String actionType; // ex: "MOBILIDADE_VERDE"
+    private String actionType; // ex: "MOBILIDADE_VERDE", "SYSTEM_MESSAGE", "PEER_PRAISE_SENT"
     private double estimatedCo2Saved;
+    
+    // Novos campos Sociais / Feed (Adicionados para o Frontend)
+    private String authorName;
+    private String content;
+    private String tag;
+    private int likesCount;
 
-    // Construtor vazio obrigatório para o AWS SDK
+    // Construtor vazio obrigatorio para o AWS SDK
     public EsgActionAuditLog() {}
 
     @DynamoDbPartitionKey
@@ -39,4 +45,16 @@ public class EsgActionAuditLog {
 
     public double getEstimatedCo2Saved() { return estimatedCo2Saved; }
     public void setEstimatedCo2Saved(double estimatedCo2Saved) { this.estimatedCo2Saved = estimatedCo2Saved; }
+
+    public String getAuthorName() { return authorName; }
+    public void setAuthorName(String authorName) { this.authorName = authorName; }
+
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
+
+    public String getTag() { return tag; }
+    public void setTag(String tag) { this.tag = tag; }
+
+    public int getLikesCount() { return likesCount; }
+    public void setLikesCount(int likesCount) { this.likesCount = likesCount; }
 }
