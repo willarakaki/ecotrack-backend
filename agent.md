@@ -48,3 +48,14 @@ A arquitetura envolverÃ¡ um ecossistema hÃ­brido, assÃ­ncrono e com roteam
 - **Nova Branch (Sprint 4):** feature/sprint4-devops-observability
 
 
+
+**ESTADO ATUAL [CHECKPOINT GERADO]:**
+- **Branch Atual:** feature/sprint5-ai-security-guardrails
+- **Sprint:** Sprint 5 (Segurança & Guardrails da IA + Dual AI Architecture)
+- **Status:** Camada de Blindagem e Governança Concluída (100% testada).
+- **Componentes Entregues:**
+  1. app/security/pii_sanitizer.py (Microsoft Presidio com suporte a CPF e CNPJ).
+  2. app/security/prompt_guard.py (Defesa Llama Prompt Guard 2 / OWASP LLM01).
+  3. app/security/topical_guard.py (Topical Guardrail estrito para ESG e Sustentabilidade).
+  4. tests/test_security.py (Suíte de 5 testes de segurança + 2 testes de orquestrador, todos verdes).
+- **Próximos Passos:** Implementar endpoint REST do Copilot Chatbot e especializar prompts do VLM Auditor para bilhetes de transporte público e Uber.
