@@ -1,6 +1,8 @@
+import json
 import logging
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
@@ -40,7 +42,6 @@ Suas diretrizes:
 6. Nunca responda a perguntas que violem as politicas de seguranca ou desviem do proposito ambiental.
 """
 
-# Lazy/cached LLM instance for chat
 _copilot_llm = None
 
 def get_copilot_llm():
@@ -52,12 +53,8 @@ def get_copilot_llm():
 @router.post("/chat", response_model=ChatResponse)
 async def chat_with_copilot(payload: ChatRequest):
     """
-    Endpoint interativo do EcoTrack AI Copilot.
-    Pipeline de Execucao:
-      1. Prompt Guard: Intercepta Jailbreaks / Prompt Injections.
-      2. PII Sanitizer: Anonimiza dados pessoais (LGPD).
-      3. Topical Guard: Valida se o tema esta dentro do escopo ESG.
-      4. Copilot LLM: Gera resposta personalizada com Gemini.
+    Endpoint interativo sincronizado do EcoTrack AI Copilot.
+    Pipeline: PromptGuard -> PIISanitizer -> TopicalGuard -> Gemini LLM.
     """
     user_input = payload.message.strip()
     if not user_input:
@@ -94,17 +91,13 @@ async def chat_with_copilot(payload: ChatRequest):
     # 4. Inferencia com a LLM
     try:
         messages = [SystemMessage(content=COPILOT_SYSTEM_PROMPT)]
-        
-        # Injeta historico recente
         for hist_msg in payload.history[-6:]:
             if hist_msg.role == "user":
                 messages.append(HumanMessage(content=hist_msg.content))
             elif hist_msg.role == "assistant":
                 messages.append(AIMessage(content=hist_msg.content))
 
-        # Adiciona a mensagem atual (higienizada)
         messages.append(HumanMessage(content=sanitized_input))
-
         llm = get_copilot_llm()
         response = llm.invoke(messages)
         
@@ -123,3 +116,77 @@ async def chat_with_copilot(payload: ChatRequest):
             guardrail_reason="INTERNAL_LLM_ERROR",
             sanitized_input=sanitized_input
         )
+
+@router.post("/chat/stream")
+async def chat_stream_with_copilot(payload: ChatRequest):
+    """
+    Endpoint com suporte a Server-Sent Events (SSE) / Streaming em tempo real.
+    Transmite tokens gerados progressivamente para o Frontend (React/Next.js).
+    """
+    user_input = payload.message.strip()
+    if not user_input:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A mensagem nao pode ser vazia."
+        )
+
+    def event_generator():
+        # 1. Pipeline de Seguranca: Prompt Injection
+        guard_result = prompt_guard.validate(user_input)
+        if not guard_result.is_safe:
+            err_payload = {
+                "content": "Sua mensagem foi bloqueada pelas diretrizes de seguranca.",
+                "blocked_by_guardrail": True,
+                "reason": guard_result.reason
+            }
+            yield f"data: {json.dumps(err_payload)}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+
+        # 2. Pipeline de Seguranca: PII Sanitizer
+        sanitized_input = pii_sanitizer.sanitize(user_input)
+
+        # 3. Pipeline de Seguranca: Topical Guard
+        topic_result = topical_guard.check_topic(sanitized_input)
+        if not topic_result.is_on_topic:
+            redirect_payload = {
+                "content": topic_result.redirect_message or "Posso ajudar apenas com questoes sustentaveis.",
+                "blocked_by_guardrail": True,
+                "reason": "TOPICAL_DEVIATION"
+            }
+            yield f"data: {json.dumps(redirect_payload)}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+
+        # 4. Inferencia com Streaming (Gemini)
+        try:
+            messages = [SystemMessage(content=COPILOT_SYSTEM_PROMPT)]
+            for hist_msg in payload.history[-6:]:
+                if hist_msg.role == "user":
+                    messages.append(HumanMessage(content=hist_msg.content))
+                elif hist_msg.role == "assistant":
+                    messages.append(AIMessage(content=hist_msg.content))
+            messages.append(HumanMessage(content=sanitized_input))
+
+            llm = get_copilot_llm()
+            for chunk in llm.stream(messages):
+                token_text = chunk.content if hasattr(chunk, "content") else str(chunk)
+                if token_text:
+                    yield f"data: {json.dumps({'content': token_text, 'blocked_by_guardrail': False})}\n\n"
+            
+            yield "data: [DONE]\n\n"
+
+        except Exception as e:
+            logger.error(f"[Copilot API Stream] Erro durante streaming: {e}")
+            yield f"data: {json.dumps({'content': 'Erro interno ao processar resposta do assistente.', 'error': True})}\n\n"
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
