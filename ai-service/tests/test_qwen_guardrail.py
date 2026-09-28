@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 from app.security.qwen_guardrail import QwenNeuralGuardrail, GuardrailVerdict
 
 def test_guardrail_verdict_schema():

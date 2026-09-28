@@ -1,4 +1,3 @@
-import pytest
 from app.security.pii_sanitizer import pii_sanitizer
 from app.security.prompt_guard import prompt_guard
 from app.security.topical_guard import topical_guard
