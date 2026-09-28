@@ -5,19 +5,30 @@
 *.DS_Store
 Thumbs.db
 
+# Environments & Secrets
+.env
+.env.*
+!.env.example
+
 # Java & Spring Boot (Core)
 core/target/
 core/*.log
 core/.mvn/wrapper/maven-wrapper.jar
 !core/.mvn/wrapper/maven-wrapper.properties
 
-# Python & IA (Router/Gatekeeper) - Preparação para Sprints 3 e 4
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-.env
-.pytest_cache/
+# Python & IA Microservice
+**/__pycache__/
+**/*.py[cod]
+**/.venv/
+**/venv/
+**/.pytest_cache/
+**/.coverage
+**/coverage.xml
+**/htmlcov/
+**/.cache/
+**/hf_cache/
 
-# Dados Locais e Logs
+# Dados Locais e Logs do Docker
 docker-volumes/
+logs/
+*.log
