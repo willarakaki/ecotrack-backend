@@ -1,23 +1,26 @@
 FROM python:3.12-slim
 
-# Evita a criação de arquivos .pyc e força logs a irem direto pro terminal
+# Evita a criacao de arquivos .pyc e forca logs a irem direto pro terminal
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Instalação de dependências do sistema necessárias para o confluent-kafka e pydantic
+# Instalacao de dependencias do sistema necessarias para o confluent-kafka
 RUN apt-get update && apt-get install -y \
     build-essential \
     librdkafka-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia e instala as dependências
+# Copia e instala as dependencias Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia o código da aplicação
+# Download do modelo em portugues do spaCy para o Microsoft Presidio
+RUN python -m spacy download pt_core_news_sm
+
+# Copia o codigo da aplicacao
 COPY ./app ./app
 
-# Por ser um worker de Kafka, rodamos diretamente o consumer
+# Por padrao executa o worker consumidor de evidencias do Kafka
 CMD ["python", "-m", "app.messaging.consumer"]
