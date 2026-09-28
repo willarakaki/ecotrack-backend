@@ -37,14 +37,37 @@ A arquitetura envolverÃ¡ um ecossistema hÃ­brido, assÃ­ncrono e com roteam
 7. **PrÃ³ximo Passo Sugerido:** Pergunta para guiar a Sprint ou resumo de Pull Request.
 
 ---
-**ESTADO ATUAL:**
+
 - **Branch Atual:** `feature/sprint3-ai-orchestration`
 - **Sprint:** Sprint 3 (IA Services)
 - **Fase:** RefatoraÃ§Ã£o de Arquitetura (Configurador e LLMFactory).
-**ESTADO ATUAL [CHECKPOINT GERADO]:**
+
 - **Sprint Anterior:** Sprint 3 (IA Services) [CONCLUÍDA].
 - **Arquitetura Construída:** config.py, llm_factory.py, Kafka, LangGraph Gatekeeper & Auditor, TDD (pytest).
 - **Próximo Passo (Sprint 4):** Refatorar graph.py para app/orchestrator e iniciar conteinerização com LangSmith.
 - **Nova Branch (Sprint 4):** feature/sprint4-devops-observability
 
 
+
+
+- **Branch Atual:** feature/sprint5-ai-security-guardrails
+- **Sprint:** Sprint 5 (Segurança & Guardrails da IA + Dual AI Architecture)
+- **Status:** Camada de Blindagem e Governança Concluída (100% testada).
+- **Componentes Entregues:**
+  1. app/security/pii_sanitizer.py (Microsoft Presidio com suporte a CPF e CNPJ).
+  2. app/security/prompt_guard.py (Defesa Llama Prompt Guard 2 / OWASP LLM01).
+  3. app/security/topical_guard.py (Topical Guardrail estrito para ESG e Sustentabilidade).
+  4. tests/test_security.py (Suíte de 5 testes de segurança + 2 testes de orquestrador, todos verdes).
+- **Próximos Passos:** Implementar endpoint REST do Copilot Chatbot e especializar prompts do VLM Auditor para bilhetes de transporte público e Uber.
+**ESTADO ATUAL [CHECKPOINT GERADO]:**
+- **Sprint Anterior:** Sprint 5 (Segurança & Guardrails da IA, Dual AI Architecture, RAG & Streaming) [CONCLUÍDA].
+- **Branch:** feature/sprint5-ai-security-guardrails
+- **Status:** Backend e Motor de IA 100% Finalizados (22 testes unitários passando).
+- **Entregas Consolidadas da Sprint 5:**
+  1. app/security/pii_sanitizer.py: Microsoft Presidio integrado ao modelo spaCy em português (pt_core_news_sm) e reconhecimento de CPF e CNPJ (LGPD).
+  2. app/security/qwen_guardrail.py: Guardrail neural unificado com Qwen 2.5 (7B) rodando na GPU local (RTX 3070 via Ollama) com fail-safe automático.
+  3. app/api/copilot.py & app/main.py: API REST FastAPI do EcoTrack Copilot com suporte a Streaming SSE (/chat/stream) e CORS.
+  4. app/rag/knowledge_base.py & app/rag/retriever.py: Motor RAG em memória com normas do GHG Protocol Brasil (Escopo 3) e fatores do IPCC.
+  5. app/agents/nodes.py & app/orchestrator/state.py: Auditor VLM (Gemini 3.5 Flash) especializado em OCR de tickets de metrô/ônibus e prints de corrida (Uber).
+  6. Dockerfile e GitHub Actions CI/CD atualizados com provisionamento do spaCy pt_core_news_sm.
+- **Próxima Etapa:** Sprint 6 (Desenvolvimento do Frontend e Conexão Fullstack).
