@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 public class EvidencePublisher {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private static final String TOPIC = "evidence.submitted.v1";
+    private static final String TOPIC = "ia-evidence-requests-topic";
 
     public void publish(EvidenceSubmittedEvent event) {
-        // Envio assíncrono para não onerar o Core Transacional
+        // Envio assÃ­ncrono para nÃ£o onerar o Core Transacional
         kafkaTemplate.send(TOPIC, event.eventId(), event)
                 .whenComplete((result, ex) -> {
                     if (ex == null) {

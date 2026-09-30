@@ -21,6 +21,7 @@ public class KafkaProducerConfig {
 
     @Bean
     public ProducerFactory<String, Object> producerFactory() {
+        System.out.println("====== BOOTSTRAP SERVERS ====== : " + bootstrapServers);
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -30,7 +31,7 @@ public class KafkaProducerConfig {
         props.put(ProducerConfig.ACKS_CONFIG, "all");
         props.put(ProducerConfig.RETRIES_CONFIG, 3);
         props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true); // Trava Anti-Duplicação
-        props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 10000); // Timeout anti-loop de conexão
+        props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 120000); // Timeout anti-loop de conexão
 
         return new DefaultKafkaProducerFactory<>(props);
     }

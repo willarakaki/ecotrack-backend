@@ -32,6 +32,7 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9094
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
     volumes:
@@ -46,6 +47,25 @@ services:
     command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
 
   # Inteligência Artificial e Orquestração LangGraph
+
+  copilot-api:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: ecotrack-ai-api
+    ports:
+      - "8001:8001"
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - LANGCHAIN_TRACING_V2=true
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-true}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT:-https://api.smith.langchain.com}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-ecotrack-ai}
+      - LANGCHAIN_API_KEY={LANGCHAIN_API_KEY:-}
+      - LANGCHAIN_PROJECT={LANGCHAIN_PROJECT:-ecotrack-ai}
+    command: ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+
   ai-service:
     build:
       context: ./ai-service
@@ -57,6 +77,10 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
       - LANGCHAIN_TRACING_V2=true
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-true}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT:-https://api.smith.langchain.com}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-ecotrack-ai}
       - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
       - LANGCHAIN_PROJECT=ecotrack-ai
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
