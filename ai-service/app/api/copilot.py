@@ -195,6 +195,17 @@ async def chat_stream_with_copilot(payload: ChatRequest):
             llm = get_copilot_llm()
             for chunk in llm.stream(messages):
                 token_text = chunk.content if hasattr(chunk, "content") else str(chunk)
+                if isinstance(token_text, list):
+                    text = ""
+                    for item in token_text:
+                        if isinstance(item, dict) and "text" in item:
+                            text += item["text"]
+                        elif isinstance(item, str):
+                            text += item
+                    token_text = text
+                elif not isinstance(token_text, str):
+                    token_text = str(token_text)
+                    
                 if token_text:
                     yield f"data: {json.dumps({'content': token_text, 'blocked_by_guardrail': False, 'rag_context_used': True})}\n\n"
             

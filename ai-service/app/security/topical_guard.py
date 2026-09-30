@@ -24,7 +24,9 @@ class TopicalGuard:
         "reciclagem", "reciclar", "lixo", "residuo", "residuos", "plastico", "organico",
         "transporte", "metro", "onibus", "trem", "bicicleta", "bike", "carona", "uber",
         "ecocoin", "ecocoins", "pontos", "recompensa", "gamificacao", "desafio",
-        "energia", "agua", "arvore", "clima", "pegada", "verde", "voucher", "voucher"
+        "energia", "agua", "arvore", "clima", "pegada", "verde", "voucher",
+        "sim", "nao", "não", "claro", "ola", "olá", "oi", "quero", "queria",
+        "bom", "boa", "dia", "tarde", "noite", "ajuda", "dicas", "dica", "ok", "valeu"
     }
 
     OUT_OF_TOPIC_REDIRECT = (

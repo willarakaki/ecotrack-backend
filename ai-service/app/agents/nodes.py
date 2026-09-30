@@ -60,7 +60,7 @@ def validate_evidence_node(state: EvidenceValidationState) -> dict:
     if evidence_url.startswith("http://") or evidence_url.startswith("https://") or evidence_url.startswith("data:image"):
         message_content = [
             {"type": "text", "text": prompt_text},
-            {"type": "image_url", "image_url": evidence_url}
+            {"type": "image_url", "image_url": {"url": evidence_url}}
         ]
     else:
         message_content = prompt_text
