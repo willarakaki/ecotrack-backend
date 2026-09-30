@@ -3,58 +3,78 @@ spring:
   application:
     name: ecotrack-core
 
-  # Configuração de Profiles (Ativando o ambiente de desenvolvimento por padrão localmente)
+  # Configuracao de Profiles (Ativando o ambiente de desenvolvimento por padrao localmente)
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
-  # Configuração Segura de Banco de Dados (Oracle SQL)
+  # Configuracao do Flyway
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+
+  # Configuracao Segura de Banco de Dados (Oracle SQL)
   datasource:
     url: ${DB_URL:jdbc:oracle:thin:@localhost:1521/XEPDB1}
     username: ${DB_USER:ecotrack_admin}
-    password: ${DB_PASSWORD:secret_local_pass} # Injetado via variável de ambiente no CI/CD
+    password: ${DB_PASSWORD:secret_local_pass} # Injetado via variavel de ambiente no CI/CD
     driver-class-name: oracle.jdbc.OracleDriver
     hikari:
-      connection-timeout: 20000 # 20 segundos máximo para tentar conexão
-      maximum-pool-size: 15     # Evita exaustão de recursos no DB
+      connection-timeout: 20000 # 20 segundos maximo para tentar conexao
+      maximum-pool-size: 15     # Evita exaustao de recursos no DB
       minimum-idle: 5
 
-  # Configuração ORM (Hibernate)
+  # Configuracao ORM (Hibernate)
   jpa:
     database-platform: org.hibernate.dialect.OracleDialect
     hibernate:
-      ddl-auto: validate # Bloqueia alterações automáticas no schema para garantir integridade
+      ddl-auto: none # Desativado para usar apenas Flyway
     show-sql: ${SHOW_SQL:false}
     properties:
       hibernate:
         format_sql: true
 
-  # Configuração de Mensageria (Apache Kafka)
+  # Configuracao de Mensageria (Apache Kafka)
   kafka:
-    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9093}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      retries: 3 # Tenta reenviar a mensagem em caso de falha transitória do broker
+      properties:
+        delivery.timeout.ms: 120000
+        request.timeout.ms: 30000
+        linger.ms: 0
+
     consumer:
       group-id: ecotrack-core-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
 
-# Configuração de Tolerância a Falhas (Anti-Loop / Circuit Breaker)
+# Configuracao de Tolerancia a Falhas (Anti-Loop / Circuit Breaker)
 resilience4j.circuitbreaker:
   instances:
     aiValidationService:
       registerHealthIndicator: true
-      slidingWindowSize: 10 # Avalia as últimas 10 chamadas
+      slidingWindowSize: 10 # Avalia as ultimas 10 chamadas
       failureRateThreshold: 50 # Abre o circuito se 50% falharem
-      waitDurationInOpenState: 10000 # Espera 10s antes de tentar novamente (Half-Open)
+      waitDurationInOpenState: 10s
       permittedNumberOfCallsInHalfOpenState: 3
+    gamificationService:
+      registerHealthIndicator: true
+      slidingWindowSize: 20
+      failureRateThreshold: 60
+
+# Timout Global para chamadas RestClient
+spring.cloud.httpclientfactories.apache.default:
+  connectionRequestTimeout: 5s
+  connectTimeout: 5s
 
 resilience4j.timelimiter:
   instances:
     aiValidationService:
-      timeoutDuration: 5s # Interrompe chamadas à IA que demorem mais de 5 segundos
+      timeoutDuration: 5s # Interrompe chamadas a IA que demorem mais de 5 segundos
 
 # Observabilidade para QA e DevOps
 management:

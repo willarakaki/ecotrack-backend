@@ -8,27 +8,37 @@ logger = logging.getLogger(__name__)
 class LLMFactory:
     """
     Factory pattern para instanciar Modelos de Linguagem (LLMs) e Embeddings.
-    Garante o Principio Open-Closed (SOLID): Se adicionarmos Groq ou OpenAI amanha,
-    so criamos um novo metodo aqui, sem quebrar os Agentes do LangGraph ou o RAG.
     """
     
     @staticmethod
-    def get_google_gemini(model_name: str = "gemini-3.5-flash", temperature: float = 0.1) -> ChatGoogleGenerativeAI:
-        """Instancia o Gemini (usado para inferencia pesada / OCR / Copilot)."""
+    def get_google_gemini(model_name: str = "gemini-3.5-flash", temperature: float = 0.1):
+        """Instancia o Gemini com Fallback Model e Max Retries."""
         api_key = settings.google_api_key
         if not api_key:
-            logger.warning("GOOGLE_API_KEY nao configurada no .env! Usando dummy para evitar crash no boot.")
+            logger.warning("GOOGLE_API_KEY nao configurada! Usando dummy para boot.")
             api_key = "dummy-key-for-boot"
             
-        return ChatGoogleGenerativeAI(
+        # Modelo principal (Pro)
+        primary_llm = ChatGoogleGenerativeAI(
             model=model_name,
             api_key=api_key,
-            temperature=temperature
+            temperature=temperature,
+            max_retries=2 # Tenta 2 vezes caso a API de timeout
         )
+
+        # Modelo fallback mais rapido/barato (Flash) caso o Pro falhe continuamente
+        fallback_llm = ChatGoogleGenerativeAI(
+            model="gemini-3.5-flash",
+            api_key=api_key,
+            temperature=temperature,
+            max_retries=1
+        )
+        
+        # Implementacao do padrao Fallback (Resiliencia e Custo)
+        return primary_llm.with_fallbacks([fallback_llm])
 
     @staticmethod
     def get_local_ollama(model_name: str = "llama3", temperature: float = 0.1) -> ChatOllama:
-        """Instancia modelo rodando local via Ollama (usado como Gatekeeper rapido e gratuito)."""
         return ChatOllama(
             base_url=settings.ollama_base_url,
             model=model_name,
@@ -37,10 +47,6 @@ class LLMFactory:
 
     @staticmethod
     def get_qwen_guardrail(model_name: str = "qwen2.5:7b", temperature: float = 0.0) -> ChatOllama:
-        """
-        Instancia o Qwen 2.5 (7B) rodando na GPU local (RTX 3070) via Ollama.
-        Especializado em atuacao como Guardrail Neural (Topical + Jailbreak Filter).
-        """
         return ChatOllama(
             base_url=settings.ollama_base_url,
             model=model_name,
@@ -48,15 +54,13 @@ class LLMFactory:
         )
 
     @staticmethod
-    def get_default_validator() -> ChatGoogleGenerativeAI:
-        """Retorna o modelo primario para validacao corporativa."""
+    def get_default_validator():
         return LLMFactory.get_google_gemini()
 
     @staticmethod
     def get_embeddings():
-        """Instancia o modelo de Embeddings para busca vetorial RAG."""
         api_key = settings.google_api_key
-        if not api_key or api_key == "dummy-key-for-ci" or api_key == "dummy-key-for-boot":
+        if not api_key or api_key == "dummy-key-for-boot":
             from langchain_core.embeddings import FakeEmbeddings
             return FakeEmbeddings(size=768)
         try:
@@ -65,7 +69,6 @@ class LLMFactory:
                 model="models/embedding-001",
                 google_api_key=api_key
             )
-        except Exception as e:
-            logger.warning(f"[LLMFactory] Falha ao instanciar embeddings do Google: {e}. Usando FakeEmbeddings.")
+        except Exception:
             from langchain_core.embeddings import FakeEmbeddings
             return FakeEmbeddings(size=768)

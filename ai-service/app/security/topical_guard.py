@@ -1,3 +1,4 @@
+import re
 import logging
 from pydantic import BaseModel, Field
 
@@ -24,7 +25,9 @@ class TopicalGuard:
         "reciclagem", "reciclar", "lixo", "residuo", "residuos", "plastico", "organico",
         "transporte", "metro", "onibus", "trem", "bicicleta", "bike", "carona", "uber",
         "ecocoin", "ecocoins", "pontos", "recompensa", "gamificacao", "desafio",
-        "energia", "agua", "arvore", "clima", "pegada", "verde", "voucher", "voucher"
+        "energia", "agua", "arvore", "clima", "pegada", "verde", "voucher",
+        "sim", "nao", "não", "claro", "ola", "olá", "oi", "quero", "queria",
+        "bom", "boa", "dia", "tarde", "noite", "ajuda", "dicas", "dica", "ok", "valeu"
     }
 
     OUT_OF_TOPIC_REDIRECT = (
@@ -40,13 +43,20 @@ class TopicalGuard:
         if not user_message or not user_message.strip():
             return TopicalGuardResult(is_on_topic=True)
 
-        tokens = set(user_message.lower().split())
+        # Remove pontuacao para match exato
+        clean_msg = re.sub(r'[^a-zA-Z0-9\s]', '', user_message.lower())
+        tokens = set(clean_msg.split())
         
-        # Interseccao de palavras-chave
         matched = tokens.intersection(self.ALLOWED_KEYWORDS)
         
-        # Se contiver pelo menos uma palavra-chave ou termo derivado
-        if matched or any(kw in user_message.lower() for kw in self.ALLOWED_KEYWORDS):
+        # Greetings/Curto: apenas se a mensagem for *muito* curta (ex: "sim", "ok", "ola", "bom dia")
+        is_short_greeting = len(tokens) <= 3 and matched
+        
+        # Palavras core (com mais de 3 letras e que nao sao greetings) garantem aprovacao
+        core_keywords = {kw for kw in self.ALLOWED_KEYWORDS if kw not in {"sim", "nao", "nǜo", "claro", "ola", "olǭ", "oi", "bom", "boa", "dia", "tarde", "noite", "ok"}}
+        has_core_topic = tokens.intersection(core_keywords)
+        
+        if has_core_topic or is_short_greeting:
             return TopicalGuardResult(is_on_topic=True, confidence=0.95)
 
         logger.info(f"[TopicalGuard] Pergunta fora do escopo ESG detectada: '{user_message[:50]}...'")
