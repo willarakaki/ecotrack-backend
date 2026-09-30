@@ -13,8 +13,7 @@ CREATE TABLE tb_tenant (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
--- Índice para acelerar a busca de corporações no roteamento de APIs
-CREATE INDEX idx_tenant_cnpj ON tb_tenant(cnpj);
+-- Nota: cnpj já possui índice implícito via constraint UNIQUE
 
 -- 2. Criação da Tabela de Usuários (Colaboradores, RH, C-Level)
 CREATE TABLE tb_user (
@@ -33,6 +32,6 @@ CREATE TABLE tb_user (
     CONSTRAINT fk_user_tenant FOREIGN KEY (tenant_id) REFERENCES tb_tenant(id)
 );
 
--- Índices para performance nas regras de negócio e dashboards
+-- Índice para performance na busca multi-tenant
 CREATE INDEX idx_user_tenant ON tb_user(tenant_id);
-CREATE INDEX idx_user_email ON tb_user(email);
+-- Nota: email já possui índice implícito via constraint UNIQUE
