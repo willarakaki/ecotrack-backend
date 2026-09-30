@@ -6,7 +6,7 @@ services:
     environment:
       - ORACLE_PASSWORD=secret_local_pass
       - APP_USER=ecotrack_admin
-      - APP_PASSWORD=secret_local_pass
+      - APP_USER_PASSWORD=secret_local_pass
     ports:
       - "1521:1521"
     volumes:
