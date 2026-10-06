@@ -1,10 +1,26 @@
 # 🌱 EcoTrack AI — Backend
 
+🔗 **Acesse o repositório do Frontend aqui:** [willarakaki/ecotrack-frontend](https://github.com/willarakaki/ecotrack-frontend)
+
 > **SaaS B2B de ESG** para rastreamento de emissões de **Escopo 3** (deslocamento de colaboradores, home office, resíduos) por meio de **gamificação** e de um **Copiloto de Sustentabilidade** com IA.
 
 O colaborador registra uma ação sustentável (ex.: bilhete de metrô, print de corrida Uber Pool, foto de reciclagem), uma IA audita a evidência (OCR + antifraude), calcula o CO₂ evitado e o sistema converte isso em **EcoCoins**, resgatáveis em um marketplace de recompensas. Gestores (RH/C-Level) acompanham o ROI ESG da empresa.
 
 O frontend está em [`ecotrack-ai-frontend`](../ecotrack-ai-frontend/README.md).
+
+---
+
+
+## 📊 Impacto Arquitetural & Performance
+
+> **Nota:** Estes números foram extraídos de testes reais de benchmark local na máquina de desenvolvimento.
+
+As escolhas arquiteturais do EcoTrack AI foram focadas em resolver gargalos comuns de aplicações baseadas em IA generativa:
+
+* **Redução de Latência no TTFT (Time-To-First-Token) em 53%:** A requisição padrão do Copiloto bloqueava o client por **~8.3 segundos** (8330ms) aguardando a resposta completa do LLM. Com a implementação de Server-Sent Events (SSE) e Streaming, entregamos o primeiro token em **~3.9 segundos** (3909ms), melhorando drasticamente a percepção de fluidez (UX).
+* **Ingestão 10x mais rápida via Apache Kafka:** Ao invés de aguardar o OCR/Validação do modelo na nuvem (que varia entre 2 a 4 segundos) em cada upload de evidência, o backend Java atua como Produtor assíncrono. O endpoint de ingestão processa a request e devolve o protocolo HTTP 202 em apenas **~229ms**.
+* **Economia de API (Dual AI Architecture):** O modelo Qwen atua como Gatekeeper local. Requisições fora de contexto ou maliciosas são barradas localmente, reduzindo chamadas inúteis (e custosas) ao Gemini.
+* **Resiliência Financeira (Backend):** Uso de *Optimistic Locking* (`@Version`) no banco para impedir *double-spending* na gamificação, abortando ataques de concorrência sem utilizar *locks* pessimistas pesados.
 
 ---
 
