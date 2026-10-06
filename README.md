@@ -8,6 +8,20 @@ O frontend está em [`ecotrack-ai-frontend`](../ecotrack-ai-frontend/README.md).
 
 ---
 
+
+## 📊 Impacto Arquitetural & Performance
+
+> **Nota:** Estes números foram extraídos de testes reais de benchmark local na máquina de desenvolvimento.
+
+As escolhas arquiteturais do EcoTrack AI foram focadas em resolver gargalos comuns de aplicações baseadas em IA generativa:
+
+* **Redução de Latência no TTFT (Time-To-First-Token) em 53%:** A requisição padrão do Copiloto bloqueava o client por **~8.3 segundos** (8330ms) aguardando a resposta completa do LLM. Com a implementação de Server-Sent Events (SSE) e Streaming, entregamos o primeiro token em **~3.9 segundos** (3909ms), melhorando drasticamente a percepção de fluidez (UX).
+* **Ingestão 10x mais rápida via Apache Kafka:** Ao invés de aguardar o OCR/Validação do modelo na nuvem (que varia entre 2 a 4 segundos) em cada upload de evidência, o backend Java atua como Produtor assíncrono. O endpoint de ingestão processa a request e devolve o protocolo HTTP 202 em apenas **~229ms**.
+* **Economia de API (Dual AI Architecture):** O modelo Qwen atua como Gatekeeper local. Requisições fora de contexto ou maliciosas são barradas localmente, reduzindo chamadas inúteis (e custosas) ao Gemini.
+* **Resiliência Financeira (Backend):** Uso de *Optimistic Locking* (`@Version`) no banco para impedir *double-spending* na gamificação, abortando ataques de concorrência sem utilizar *locks* pessimistas pesados.
+
+---
+
 ## 📑 Sumário
 
 - [A ideia do projeto](#-a-ideia-do-projeto)
