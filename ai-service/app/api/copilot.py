@@ -139,7 +139,7 @@ async def chat_with_copilot(payload: ChatRequest):
         )
 
 @router.post("/chat/stream")
-async def chat_stream_with_copilot(payload: ChatRequest):
+async def chat_stream_with_copilot(payload: ChatRequest):  # noqa: C901
     """
     Endpoint com suporte a Server-Sent Events (SSE) / Streaming em tempo real enriquecido com Qwen Guardrail + RAG.
     """
